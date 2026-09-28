@@ -2435,10 +2435,17 @@ class APIRouter(routing.Router):
                 "A path prefix must not end with '/', as the routes will start with '/'"
             )
         else:
-            for r in _iter_included_route_candidates(router.routes):
-                path = getattr(r, "path", None)
-                name = getattr(r, "name", "unknown")
-                if path is not None and not path:
+            for route, route_context in _iter_routes_with_context(router.routes):
+                if route_context and route_context.starlette_route:
+                    resolved_path = getattr(route_context.starlette_route, "path", None)
+                else:
+                    resolved_path = (
+                        getattr(route_context, "path", None)
+                        if route_context
+                        else getattr(route, "path", None)
+                    )
+                name = getattr(route, "name", "unknown")
+                if resolved_path is not None and not resolved_path:
                     raise FastAPIError(
                         f"Prefix and path cannot be both empty (path operation: {name})"
                     )
